@@ -1,0 +1,42 @@
+{
+  "name": "Open Captions - Netflix Subtitles Without Closed Captions",
+  "short_name": "Open Captions",
+  "description": "Changes Netflix english subtitles so they don't have the Closed Captions Crap",
+  "developer": {
+    "name": "Michiel Dral",
+    "url": "https://dral.eu/"
+  },
+  "version": "1",
+  "manifest_version": 2,
+  "permissions": ["storage", "tabs"],
+  "applications": {
+    "gecko": {
+      "id": "{477dbe5e-1742-4641-a2c3-b6113bb5cf6g}"
+    }
+  },
+  "browser_action": {
+    "default_icon": {
+      "32": "/Images/Icon_Windowed_Mono@1x.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "run_at": "document_end",
+      "matches": ["https://www.netflix.com/*"],
+      "js": ["Vendor/browser-polyfill.min.js", "Content.js"]
+    }
+  ],
+  "background": {
+    "scripts": [
+      "Vendor/browser-polyfill.min.js",
+      "Background/BackgroundEntry.js"
+    ],
+    "persistent": false
+  },
+  "icons": {
+    "16": "Icons/Icon_16.png",
+    "32": "Icons/Icon_32.png",
+    "64": "Icons/Icon_64.png",
+    "128": "Icons/Icon_128.png"
+  }
+}
