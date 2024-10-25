@@ -66,9 +66,7 @@ let _color_icon = async (url, _color) => {
 
   let blob = await createImageBitmap(await (await fetch(url)).blob());
 
-  let canvas = document.createElement("canvas");
-  canvas.width = blob.width;
-  canvas.height = blob.height;
+  let canvas = new OffscreenCanvas(blob.width, blob.height);
 
   // Initaliase a 2-dimensional drawing context
   let ctx = canvas.getContext("2d");
@@ -76,7 +74,7 @@ let _color_icon = async (url, _color) => {
   let height = ctx.canvas.height;
 
   // create offscreen buffer,
-  let buffer = document.createElement("canvas");
+  let buffer = new OffscreenCanvas(blob.width, blob.height);
   buffer.width = blob.width;
   buffer.height = blob.height;
 

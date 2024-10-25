@@ -77,9 +77,23 @@ let ping_content_script = async (tabId) => {
       });
       return await current_port_promises[tabId];
     }
+  } catch (error) {
+    return false;
   } finally {
     delete current_port_promises[tabId];
   }
+};
+
+let remote_prefers_dark_mode = () => {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+};
+
+let is_dark = async (tab) => {
+  let x = await browser.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: remote_prefers_dark_mode,
+  });
+  return x?.[0]?.result ?? false;
 };
 
 /**
@@ -98,14 +112,13 @@ let icon_theme_color = async (tab) => {
     if (theme?.colors?.popup_text != null) {
       return theme.colors.popup_text;
     }
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
+
+    return (await is_dark(tab))
       ? "rgba(255,255,255,0.8)"
       : "rgb(250, 247, 252)";
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "rgba(255,255,255,0.8)"
-    : "#5f6368";
+  return (await is_dark(tab)) ? "rgba(255,255,255,0.8)" : "#5f6368";
 };
 
 /**
@@ -126,11 +139,11 @@ let notify_tab_state = async (tabId, properties) => {
  * @param {{ icon: ImageData, title: string }} action
  */
 let apply_browser_action = async (tabId, action) => {
-  await browser.browserAction.setIcon({
+  await chrome.action.setIcon({
     tabId: tabId,
     imageData: action.icon,
   });
-  await browser.browserAction.setTitle({
+  await chrome.action.setTitle({
     tabId: tabId,
     title: action.title,
   });
@@ -142,6 +155,8 @@ let apply_browser_action = async (tabId, action) => {
 let update_button_on_tab = async (tab) => {
   let has_contentscript_active =
     tab.status === "complete" && (await ping_content_script(tab.id));
+
+  chrome.action.enable();
 
   // A specific exception for about:blank so, on firefox,
   // when you customize your menu bar, ~windowed~ select-some is at it's most beautiful.
@@ -165,9 +180,10 @@ let update_button_on_tab = async (tab) => {
       tab.url.match(/^https?:\/\/support\.mozilla\.org/) ||
       tab.url.match(/^https?:\/\/addons.mozilla.org/))
   ) {
+    chrome.action.disable();
     await apply_browser_action(tab.id, {
-      icon: await tint_image(BROWSERACTION_ICON, "rgba(208, 2, 27, .22)"),
-      title: `For security reasons, NosedCaptions is not supported on this domain (${tab.url}).`,
+      icon: await tint_image(BROWSERACTION_ICON, "rgba(133, 133, 133, 0.5)"),
+      title: `NosedCaptions only runs on netflix.com.`,
     });
     return;
   }
@@ -184,9 +200,10 @@ let update_button_on_tab = async (tab) => {
       });
     } catch (error) {
       // if it doesn't work... I guess I'll just show the error message
+      chrome.action.disable();
       await apply_browser_action(tab.id, {
-        icon: await tint_image(BROWSERACTION_ICON, "rgba(208, 2, 27, .22)"),
-        title: `For security reasons, NosedCaptions is not supported on this domain (${tab.url}).`,
+        icon: await tint_image(BROWSERACTION_ICON, "rgba(133, 133, 133, 0.5)"),
+        title: `NosedCaptions only runs on netflix.com.`,
       });
     }
   }
@@ -212,7 +229,7 @@ let update_button_on_tab = async (tab) => {
   }
 };
 
-browser.browserAction.onClicked.addListener(async (tab) => {
+chrome.action.onClicked.addListener(async (tab) => {
   let host = new URL(tab.url).host;
   let { [host]: previous_config } = await browser.storage.sync.get(host);
   await browser.storage.sync.set({
